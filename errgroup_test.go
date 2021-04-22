@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/neilotoole/errgroup"
 )
@@ -178,5 +179,23 @@ func TestWithContext(t *testing.T) {
 				"ctx.Done() was not closed",
 				g, tc.errs)
 		}
+	}
+}
+
+func TestGoFromGo(t *testing.T) {
+	ctx := context.Background()
+
+	eg, _ := errgroup.WithContext(ctx)
+
+	eg.Go(
+		func() error {
+			time.Sleep(100 * time.Millisecond)
+			eg.Go(func() error { return nil })
+			return nil
+		},
+	)
+
+	if err := eg.Wait(); err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
